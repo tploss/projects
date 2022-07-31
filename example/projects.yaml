@@ -1,0 +1,11 @@
+projects:
+  - name: biosim
+    repos:
+      - name: sim
+        url: git@gitlab.com:tploss/biosim.git
+  - name: utils
+    repos:
+      - name: godirserver
+        url: git@gitlab.com:tploss/godirserver.git
+      - name: ssc
+        url: git@gitlab.com:tploss/script-snippet-collection.git

@@ -1,0 +1,13 @@
+run:
+  timeout: 2m
+  issue-exit-code: 1
+  tests: true
+  skip-dirs-use-default: true
+  allow-parallel-runners: false
+linters:
+  disable:
+    - deadcode
+linters-settings:
+  govet:
+    check-shadowing: true
+    enable-all: true
