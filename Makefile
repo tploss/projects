@@ -12,7 +12,7 @@ HADOLINT=dockerregistry-v2.vih.infineon.com/hadolint/hadolint:2.10.0-alpine
 GOLINT=golangci/golangci-lint:v1.47-alpine
 YAMLLINT=cytopia/yamllint:1.26
 MAKE=make --no-print-directory
-CONF=config
+CONF=.config
 OUT=out
 COV_HTML_REP=$(OUT)/coverage_html_report
 BINARY_NAME=projects
@@ -79,7 +79,7 @@ lint-dockerfile: ## Lint your Dockerfile
 	$(TEST_DOCKERFILE) && $(DOCKER) run --rm -i $(REG)/$(HADOLINT) < $(DOCKERFILE) || $(NO_DOCKERFILE)
 
 lint-go: ## Use golintci-lint on your project
-	$(DOCKER) run --rm -v $(shell pwd):/code -w /code $(REG)/$(GOLINT) golangci-lint run --config config/.golangci.yaml --deadline=60s 
+	$(DOCKER) run --rm -v $(shell pwd):/code -w /code $(REG)/$(GOLINT) golangci-lint run --config $(CONF)/.golangci.yaml --deadline=60s 
 
 lint-yaml: ## Use yamllint on the yaml file of your projects
 	$(DOCKER) run --rm -it -v $(shell pwd):/data -w /data $(REG)/$(YAMLLINT) --format colored --config-file $(CONF)/.yamllint.yaml $(shell find -name '*.yml' -o -name '*.yaml')
