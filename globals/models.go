@@ -2,10 +2,12 @@ package globals
 
 import (
 	"fmt"
-	"regexp"
+	"os"
+	"path/filepath"
 )
 
 type Conf struct {
+	BaseDir  string    `yaml:"base_dir"`
 	Projects []Project `yaml:"projects"`
 }
 
@@ -31,6 +33,14 @@ func (c *Conf) SetProject(name string, newP Project) {
 	c.Projects = append(c.Projects, newP)
 }
 
+func (c *Conf) RemoveProject(name string) {
+	for i, p := range c.Projects {
+		if p.Name == name {
+			c.Projects = append(c.Projects[:i], c.Projects[i+1:]...)
+		}
+	}
+}
+
 func (c Conf) GetProject(name string) (Project, bool) {
 	for _, p := range c.Projects {
 		if p.Name == name {
@@ -40,38 +50,25 @@ func (c Conf) GetProject(name string) (Project, bool) {
 	return Project{Name: name, Repos: []Repo{{Name: "Placeholder", Url: "Placeholder"}}}, false
 }
 
-func (c Conf) Validate() error {
+func (p Project) RemoveFromDisk(baseDir string) error {
+	pPath := filepath.Join(baseDir, p.Name)
+	return os.RemoveAll(pPath)
+}
+
+func (c Conf) Dir(repo string) (string, error) {
 	for _, p := range c.Projects {
-		if err := p.validate(); err != nil {
-			return fmt.Errorf("config has an issue: %w", err)
+		if path := p.dir(repo); path != "" {
+			return filepath.Join(c.BaseDir, path), nil
 		}
 	}
-	return nil
+	return "", fmt.Errorf("repo %s was not found in config", repo)
 }
 
-func (p Project) validate() error {
-	if err := validate(p.Name); err != nil {
-		return fmt.Errorf("Project name %s has an issue: %w", p.Name, err)
-	}
+func (p Project) dir(repo string) string {
 	for _, r := range p.Repos {
-		if err := r.validate(); err != nil {
-			return fmt.Errorf("Project repos have an issue: %w", err)
+		if r.Name == repo {
+			return filepath.Join(p.Name, r.Name)
 		}
 	}
-	return nil
-}
-
-func (r Repo) validate() error {
-	if err := validate(r.Name); err != nil {
-		return fmt.Errorf("Repo name %s has an issue: %w", r.Name, err)
-	}
-	return nil
-}
-
-func validate(s string) error {
-	pattern := `^[a-zA-Z0-9_-]+$`
-	if !regexp.MustCompile(pattern).Match([]byte(s)) {
-		return fmt.Errorf("%s does not match %s", s, pattern)
-	}
-	return nil
+	return ""
 }

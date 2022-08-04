@@ -40,7 +40,6 @@ func (m Man) BeforeApply(app *kong.Kong) error {
 	}
 	defer out.Close()
 	fmt.Fprint(out, man.Build(roff.NewDocument()))
-	fmt.Println("\noutput: ", m.Output)
 	app.Exit(0)
 	return nil
 }

@@ -3,7 +3,6 @@ package globals
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/alecthomas/kong"
 	"gopkg.in/yaml.v3"
@@ -16,13 +15,12 @@ type G struct {
 }
 
 func (g *G) AfterApply() error {
-	if []rune(g.Config)[0] == '~' {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		g.Config = filepath.Join(home, string([]rune(g.Config)[1:]))
+	dir, err := ExpandTilde(g.Config)
+	if err != nil {
+		return err
 	}
+	g.Config = dir
+
 	if _, err := os.Stat(g.Config); err != nil {
 		return fmt.Errorf("Config/Projects file could not be opened: %w", err)
 	}

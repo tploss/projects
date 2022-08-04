@@ -12,7 +12,6 @@ import (
 var printLocation io.Writer = os.Stdout
 
 type ListCmd struct {
-	All      bool   `short:"a" xor:"type" help:"List all projects with all of their repos"`
 	Projects bool   `short:"p" xor:"type" help:"Only list projects"`
 	Repos    string `short:"r" xor:"type" help:"Only list repos of given project"`
 
