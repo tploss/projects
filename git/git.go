@@ -2,72 +2,87 @@ package git
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
-	git "github.com/go-git/go-git/v5"
-	gssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"gitlab.com/tploss/projects/globals"
 )
 
-func ClonePullAll(project globals.Project) error {
-	fmt.Println(git.Open)
-	return nil
-}
-
 type GitCmd struct {
-	PrivateKey string `name:"private-key" short:"k" type:"existingfile" env:"SSH_KEY" default:"~/.ssh/id_rsa" help:"Path to SSH private key that should be used"`
+	Project string   `short:"p" optional:"" help:"Only pull/clone repos of given project"`
+	GitArgs []string `arg:"" passthrough:""`
 }
 
-type PullCmd struct {
-	Project string `short:"p" help:"Only pull/clone repos of given project"`
-}
-
-func (p PullCmd) Run(g *globals.G) error {
-	auth, err := gssh.NewSSHAgentAuth("")
-	fmt.Println(auth.User)
+func (gc GitCmd) Run(g *globals.G) error {
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	pulled := make([]globals.Repo, 0)
-	for _, proj := range g.Conf.Projects {
-		if p.Project != "" && proj.Name != p.Project {
-			continue
+
+	var projects []globals.Project
+	if gc.Project != "" {
+		proj, exists := g.Conf.GetProject(gc.Project)
+		if !exists {
+			return fmt.Errorf("project %s is not found in the config", gc.Project)
 		}
-		for _, repo := range proj.Repos {
-			rDir, err := g.Conf.Dir(repo.Name)
+		projects = []globals.Project{proj}
+	} else {
+		projects = g.Conf.Projects
+	}
+
+	for _, p := range projects {
+		for _, r := range p.Repos {
+			fmt.Printf("Handling %s\n", filepath.Join(p.Name, r.Name))
+			path := g.Conf.Dir(p, r)
+
+			if err = ensureGit(path, r); err != nil {
+				return err
+			}
+			err = os.Chdir(path)
 			if err != nil {
 				return err
 			}
-			if info, err := os.Stat(filepath.Join(rDir, ".git")); err != nil {
-				// clone needed
-				globals.EnsureDir(rDir)
-				_, err := git.PlainClone(rDir, false, &git.CloneOptions{URL: repo.Url, Auth: auth})
-				if err != nil {
-					return err
-				}
-				pulled = append(pulled, repo)
-			} else if !info.IsDir() {
-				return fmt.Errorf("repo directory %s contains .git but it is not a directory", rDir)
-			} else {
-				// pull needed
-				re, err := git.PlainOpen(rDir)
-				if err != nil {
-					return err
-				}
-				work, err := re.Worktree()
-				if err != nil {
-					return err
-				}
-				if err := work.Pull(&git.PullOptions{Auth: auth}); err != nil {
-					return err
-				}
-				pulled = append(pulled, repo)
+			cmd := exec.Command("git", gc.GitArgs...)
+			globals.AttachOwnWriters(cmd)
+			if err = cmd.Run(); err != nil {
+				return err
 			}
+			fmt.Println("========")
 		}
 	}
-	if len(pulled) == 0 {
-		return fmt.Errorf("no repos were found for %s", p.Project)
+	return os.Chdir(wd)
+}
+
+func ensureGit(path string, repo globals.Repo) error {
+	globals.EnsureDir(path)
+	gPath := filepath.Join(path, ".git")
+
+	if stat, err := os.Stat(gPath); err != nil {
+		if files, _ := ioutil.ReadDir(path); len(files) != 0 {
+			return fmt.Errorf("path %s does not contain a git repository but has content", path)
+		}
+
+		// have to clone since git repo does not exist
+		fmt.Println("Cloning repository since it does not exist yet")
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		if err = os.Chdir(path); err != nil {
+			return err
+		}
+		cmd := exec.Command("git", "clone", repo.Url, ".")
+		globals.AttachOwnWriters(cmd)
+		if err = cmd.Run(); err != nil {
+			return err
+		}
+		return os.Chdir(wd)
+	} else {
+		if !stat.IsDir() {
+			return fmt.Errorf("path %s exists but is not a directory", gPath)
+		}
 	}
 	return nil
 }

@@ -28,8 +28,7 @@ type CLI struct {
 	Edit   edit.EditCmd `cmd:"" help:"Edit a project"`
 	Add    add.AddCmd   `cmd:"" help:"Add a project (alias for edit <project> on non existing project)"`
 	Remove rm.RmCmd     `cmd:"" aliases:"rm" help:"Remove project(s) from disk and optionally from config"`
-	Pull   git.PullCmd  `cmd:"" help:"Pull/clone repos to local filesystem (default: pulls/clones all repos)"`
-	// TODO: PullCmd
+	Git    git.GitCmd   `cmd:"" help:"Run a git command on all repos (of a project)"`
 }
 
 func main() {

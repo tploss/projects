@@ -1,7 +1,6 @@
 package globals
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -55,20 +54,6 @@ func (p Project) RemoveFromDisk(baseDir string) error {
 	return os.RemoveAll(pPath)
 }
 
-func (c Conf) Dir(repo string) (string, error) {
-	for _, p := range c.Projects {
-		if path := p.dir(repo); path != "" {
-			return filepath.Join(c.BaseDir, path), nil
-		}
-	}
-	return "", fmt.Errorf("repo %s was not found in config", repo)
-}
-
-func (p Project) dir(repo string) string {
-	for _, r := range p.Repos {
-		if r.Name == repo {
-			return filepath.Join(p.Name, r.Name)
-		}
-	}
-	return ""
+func (c Conf) Dir(proj Project, repo Repo) string {
+	return filepath.Join(c.BaseDir, proj.Name, repo.Name)
 }
