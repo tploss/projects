@@ -7,6 +7,7 @@ import (
 	"github.com/alecthomas/kong"
 	"gitlab.com/tploss/projects/add"
 	"gitlab.com/tploss/projects/edit"
+	"gitlab.com/tploss/projects/git"
 	"gitlab.com/tploss/projects/globals"
 	"gitlab.com/tploss/projects/list"
 	"gitlab.com/tploss/projects/man"
@@ -27,7 +28,7 @@ type CLI struct {
 	Edit   edit.EditCmd `cmd:"" help:"Edit a project"`
 	Add    add.AddCmd   `cmd:"" help:"Add a project (alias for edit <project> on non existing project)"`
 	Remove rm.RmCmd     `cmd:"" aliases:"rm" help:"Remove project(s) from disk and optionally from config"`
-	// TODO: PullCmd
+	Git    git.GitCmd   `cmd:"" help:"Run a git command on all repos (of a project)"`
 }
 
 func main() {
